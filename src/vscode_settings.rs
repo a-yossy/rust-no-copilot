@@ -3,9 +3,9 @@ use std::io::Write;
 use std::path::Path;
 
 pub const COPILOT_DISABLED_SETTING: &str = r#"{
-      "editor.inlineSuggest.enabled": false,
-    }
-    "#;
+    "editor.inlineSuggest.enabled": false
+}
+"#;
 
 pub fn create(base_dir: &Path) -> std::io::Result<()> {
     let vscode_dir = base_dir.join(".vscode");
