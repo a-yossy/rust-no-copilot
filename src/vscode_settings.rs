@@ -1,19 +1,31 @@
-use std::fs::{create_dir_all, File};
-use std::io::Write;
+use std::fs::{self, create_dir_all, read_to_string};
 use std::path::Path;
 
-pub const COPILOT_DISABLED_SETTING: &str = r#"{
-    "editor.inlineSuggest.enabled": false
-}
-"#;
+use serde_json::{json, Value};
+
+const COPILOT_DISABLED_SETTING_KEY: &str = "editor.inlineSuggest.enabled";
 
 pub fn create(base_dir: &Path) -> std::io::Result<()> {
     let vscode_dir = base_dir.join(".vscode");
     create_dir_all(&vscode_dir)?;
+    let copilot_disabled_setting = serde_json::to_string_pretty(&json!({
+        COPILOT_DISABLED_SETTING_KEY: false
+    }))
+    .unwrap();
 
     let settings_file = vscode_dir.join("settings.json");
-    let mut file = File::create(settings_file)?;
-    file.write_all(COPILOT_DISABLED_SETTING.as_bytes())?;
+    if settings_file.exists() {
+        let settings_file_content = read_to_string(&settings_file).unwrap();
+        let mut settings_file_content: Value = serde_json::from_str(&settings_file_content)?;
+        settings_file_content[COPILOT_DISABLED_SETTING_KEY] = Value::Bool(false);
+        fs::write(
+            settings_file,
+            serde_json::to_string_pretty(&settings_file_content)?,
+        )?;
+
+        return Ok(());
+    }
+    fs::write(settings_file, copilot_disabled_setting)?;
 
     Ok(())
 }
@@ -34,7 +46,12 @@ mod tests {
 
         assert!(result.is_ok());
         let settings_json_content = fs::read_to_string(settings_json).unwrap();
-        assert_eq!(settings_json_content, COPILOT_DISABLED_SETTING);
+        assert_eq!(
+            settings_json_content,
+            r#"{
+  "editor.inlineSuggest.enabled": false
+}"#
+        );
     }
 
     #[test]
@@ -48,6 +65,11 @@ mod tests {
 
         assert!(result.is_ok());
         let settings_json_content = fs::read_to_string(settings_json).unwrap();
-        assert_eq!(settings_json_content, COPILOT_DISABLED_SETTING);
+        assert_eq!(
+            settings_json_content,
+            r#"{
+  "editor.inlineSuggest.enabled": false
+}"#
+        );
     }
 }
