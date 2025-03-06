@@ -8,30 +8,25 @@ const COPILOT_DISABLED_SETTING_KEY: &str = "editor.inlineSuggest.enabled";
 pub fn create(base_dir: &Path) -> std::io::Result<()> {
     let vscode_dir = base_dir.join(".vscode");
     create_dir_all(&vscode_dir)?;
-    let copilot_disabled_setting = format!(
-        "{}\n",
-        serde_json::to_string_pretty(&json!({
-            COPILOT_DISABLED_SETTING_KEY: false
-        }))
-        .unwrap()
-    );
+    let settings_path = vscode_dir.join("settings.json");
 
-    let settings_json = vscode_dir.join("settings.json");
-    if settings_json.exists() {
-        let settings_json_content = read_to_string(&settings_json).unwrap();
-        let mut settings_json_content: Value = serde_json::from_str(&settings_json_content)?;
-        settings_json_content[COPILOT_DISABLED_SETTING_KEY] = Value::Bool(false);
+    if settings_path.exists() {
+        let settings_json = read_to_string(&settings_path)?;
+        let mut settings_json: Value = serde_json::from_str(&settings_json)?;
+        settings_json[COPILOT_DISABLED_SETTING_KEY] = json!(false);
         fs::write(
-            settings_json,
-            format!(
-                "{}\n",
-                serde_json::to_string_pretty(&settings_json_content)?
-            ),
+            settings_path,
+            serde_json::to_string_pretty(&settings_json)? + "\n",
         )?;
-
-        return Ok(());
+    } else {
+        let copilot_disabled_setting = serde_json::json!({
+            COPILOT_DISABLED_SETTING_KEY: false
+        });
+        fs::write(
+            settings_path,
+            serde_json::to_string_pretty(&copilot_disabled_setting)? + "\n",
+        )?;
     }
-    fs::write(settings_json, copilot_disabled_setting)?;
 
     Ok(())
 }
@@ -65,7 +60,7 @@ mod tests {
     fn vscodeディレクトリが存在する_設定ファイルが存在しない場合_設定ファイルが作成されること() {
         let temp_dir = tempdir().unwrap();
         let vscode_dir = temp_dir.path().join(".vscode");
-        let _ = create_dir_all(&vscode_dir);
+        create_dir_all(&vscode_dir).unwrap();
         let settings_json = vscode_dir.join("settings.json");
 
         let result = create(temp_dir.path());
@@ -86,7 +81,7 @@ mod tests {
     ) {
         let temp_dir = tempdir().unwrap();
         let vscode_dir = temp_dir.path().join(".vscode");
-        let _ = create_dir_all(&vscode_dir);
+        create_dir_all(&vscode_dir).unwrap();
         let settings_json = vscode_dir.join("settings.json");
         let _ = fs::write(
             &settings_json,
@@ -114,7 +109,7 @@ mod tests {
     ) {
         let temp_dir = tempdir().unwrap();
         let vscode_dir = temp_dir.path().join(".vscode");
-        let _ = create_dir_all(&vscode_dir);
+        create_dir_all(&vscode_dir).unwrap();
         let settings_json = vscode_dir.join("settings.json");
         let _ = fs::write(
             &settings_json,
