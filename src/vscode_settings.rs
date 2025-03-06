@@ -21,7 +21,6 @@ pub fn create(base_dir: &Path) -> std::io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::vscode_settings;
     use std::fs;
     use tempfile::tempdir;
 
@@ -31,7 +30,7 @@ mod tests {
         let settings_json = temp_dir.path().join(".vscode").join("settings.json");
         assert!(!settings_json.exists());
 
-        let result = vscode_settings::create(temp_dir.path());
+        let result = create(temp_dir.path());
 
         assert!(result.is_ok());
         let settings_json_content = fs::read_to_string(settings_json).unwrap();
@@ -45,7 +44,7 @@ mod tests {
         let _ = create_dir_all(&vscode_dir);
         let settings_json = vscode_dir.join("settings.json");
 
-        let result = vscode_settings::create(temp_dir.path());
+        let result = create(temp_dir.path());
 
         assert!(result.is_ok());
         let settings_json_content = fs::read_to_string(settings_json).unwrap();
